@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Data.Enums;
 using Jellyfin.Extensions;
+using Jellyfin.Plugin.SubtitleExtract.Helpers;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -129,6 +130,8 @@ public class ExtractSubtitlesTask : IScheduledTask
         var isAdvancedCodecSelection = config.IsAdvancedMode;
         var includeTextSubtitles = config.IncludeTextSubtitles;
         var includeGraphicalSubtitles = config.IncludeGraphicalSubtitles;
+        var extractSpanish = config.ExtractOnlySpanish;
+        var extractEnglish = config.ExtractOnlyEnglish;
 
         if (!parentId.IsNullOrEmpty())
         {
@@ -151,7 +154,24 @@ public class ExtractSubtitlesTask : IScheduledTask
 
                 foreach (var mediaSource in video.GetMediaSources(false).Where(source => FilterMediasWithCodec(isAdvancedCodecSelection, includeTextSubtitles, includeGraphicalSubtitles, selectedCodecs, source)))
                 {
-                    await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
+                    // Apply language filtering if enabled
+                    if (extractSpanish || extractEnglish)
+                    {
+                        var subtitleStreams = mediaSource.MediaStreams
+                            .Where(stream => stream.Type == MediaStreamType.Subtitle)
+                            .Where(stream => LanguageFilter.ShouldExtractSubtitle(stream, extractSpanish, extractEnglish))
+                            .ToList();
+
+                        foreach (var stream in subtitleStreams)
+                        {
+                            await _encoder.ExtractTextSubtitle(mediaSource, stream.Index, "srt", cancellationToken).ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        // No language filter, extract all
+                        await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
+                    }
                 }
 
                 completedVideos++;

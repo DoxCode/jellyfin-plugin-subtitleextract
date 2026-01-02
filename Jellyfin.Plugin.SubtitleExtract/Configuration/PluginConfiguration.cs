@@ -73,12 +73,22 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool IsAdvancedMode { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether advanced codec selection mode is enabled.
+    /// Gets or sets a value indicating whether to include text subtitles.
     /// </summary>
     public bool IncludeTextSubtitles { get; set; } = true;
 
     /// <summary>
-    /// Gets or sets a value indicating whether advanced codec selection mode is enabled.
+    /// Gets or sets a value indicating whether to include graphical subtitles.
     /// </summary>
     public bool IncludeGraphicalSubtitles { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to extract only Spanish subtitles.
+    /// </summary>
+    public bool ExtractOnlySpanish { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to extract only English subtitles.
+    /// </summary>
+    public bool ExtractOnlyEnglish { get; set; } = false;
 }

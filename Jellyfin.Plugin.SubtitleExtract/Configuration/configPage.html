@@ -34,6 +34,27 @@
                     </div>
                 </div>
 
+                <!-- Language Filter Section -->
+                <h3 class="checkboxListLabel" style="margin-top: 1.5em;">Language Filters</h3>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label>
+                        <input is="emby-checkbox" type="checkbox" id="chkExtractOnlySpanish"/>
+                        <span>Extract only SPANISH</span>
+                    </label>
+                    <div class="fieldDescription checkboxFieldDescription">Extracts Spanish subtitles (includes Spain/Castilian and Latin American variants)</div>
+                </div>
+
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label>
+                        <input is="emby-checkbox" type="checkbox" id="chkExtractOnlyEnglish"/>
+                        <span>Extract only ENGLISH</span>
+                    </label>
+                    <div class="fieldDescription checkboxFieldDescription">Extracts English subtitles</div>
+                </div>
+                <div class="fieldDescription" style="margin-left: 1.8em; margin-bottom: 1em; font-style: italic; color: #999;">
+                    Note: If no language is selected, all subtitles will be extracted. If both are selected, only Spanish and English subtitles will be extracted.
+                </div>
+
                 <!-- Easy Mode Section -->
                 <div id="easyModeSection">
                     <h3 class="checkboxListLabel">Subtitle Types to Extract</h3>
@@ -135,6 +156,8 @@
                     page.querySelector('#chkTextSubtitles').checked = !!config.IncludeTextSubtitles;
                     page.querySelector('#chkGraphicalSubtitles').checked = !!config.IncludeGraphicalSubtitles;
                     page.querySelector('#chkAdvancedMode').checked = !!config.IsAdvancedMode;
+                    page.querySelector('#chkExtractOnlySpanish').checked = !!config.ExtractOnlySpanish;
+                    page.querySelector('#chkExtractOnlyEnglish').checked = !!config.ExtractOnlyEnglish;
 
                     generateCheckboxList(config.AllSubtitleCodecs, config.SelectedCodecs, "includedCodecsCheckboxes");
 
@@ -154,6 +177,8 @@
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                     config.ExtractionDuringLibraryScan = form.querySelector('#chkEnableDuringScan').checked;
                     config.IncludeTextSubtitles = form.querySelector('#chkTextSubtitles').checked;
+                    config.ExtractOnlySpanish = form.querySelector('#chkExtractOnlySpanish').checked;
+                    config.ExtractOnlyEnglish = form.querySelector('#chkExtractOnlyEnglish').checked;
                     config.IncludeGraphicalSubtitles = form.querySelector('#chkGraphicalSubtitles').checked;
                     config.IsAdvancedMode = form.querySelector('#chkAdvancedMode').checked;
                     config.SelectedSubtitlesLibraries = getChecked('librarySubtitlesCheckboxes');

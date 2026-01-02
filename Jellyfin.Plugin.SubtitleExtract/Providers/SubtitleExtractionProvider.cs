@@ -1,11 +1,14 @@
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Plugin.SubtitleExtract.Helpers;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Providers;
+using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.SubtitleExtract.Providers;
@@ -87,7 +90,33 @@ public class SubtitleExtractionProvider : ICustomMetadataProvider<Episode>,
 
             foreach (var mediaSource in item.GetMediaSources(false))
             {
-                await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
+                // Filter subtitle streams by language if filters are active
+                if (config.ExtractOnlySpanish || config.ExtractOnlyEnglish)
+                {
+                    var subtitleStreams = mediaSource.MediaStreams
+                        .Where(stream => stream.Type == MediaStreamType.Subtitle)
+                        .Where(stream => LanguageFilter.ShouldExtractSubtitle(stream, config.ExtractOnlySpanish, config.ExtractOnlyEnglish))
+                        .ToList();
+
+                    if (subtitleStreams.Count > 0)
+                    {
+                        _logger.LogDebug("Extracting {Count} filtered subtitle streams from {Video}", subtitleStreams.Count, item.Path);
+                        
+                        foreach (var stream in subtitleStreams)
+                        {
+                            await _encoder.ExtractTextSubtitle(mediaSource, stream.Index, "srt", cancellationToken).ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogDebug("No subtitles matching language filters found for: {Video}", item.Path);
+                    }
+                }
+                else
+                {
+                    // No language filter active, extract all subtitles
+                    await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
+                }
             }
 
             _logger.LogDebug("Finished subtitle extraction for: {Video}", item.Path);
