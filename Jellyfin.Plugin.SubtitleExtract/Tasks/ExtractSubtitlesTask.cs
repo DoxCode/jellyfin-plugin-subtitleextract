@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Data.Enums;
 using Jellyfin.Extensions;
+using Jellyfin.Plugin.SubtitleExtract.Helpers;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -13,6 +14,7 @@ using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Globalization;
 using MediaBrowser.Model.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.SubtitleExtract.Tasks;
 
@@ -32,20 +34,25 @@ public class ExtractSubtitlesTask : IScheduledTask
     private static readonly SourceType[] _sourceTypes = [SourceType.Library];
     private static readonly DtoOptions _dtoOptions = new(false);
 
+    private readonly ILogger<ExtractSubtitlesTask> _logger;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="ExtractSubtitlesTask" /> class.
     /// </summary>
     /// <param name="libraryManager">Instance of <see cref="ILibraryManager"/> interface.</param>
     /// <param name="subtitleEncoder"><see cref="ISubtitleEncoder"/> instance.</param>
     /// <param name="localization">Instance of <see cref="ILocalizationManager"/> interface.</param>
+    /// <param name="logger">Instance of the <see cref="ILogger"/> interface.</param>
     public ExtractSubtitlesTask(
         ILibraryManager libraryManager,
         ISubtitleEncoder subtitleEncoder,
-        ILocalizationManager localization)
+        ILocalizationManager localization,
+        ILogger<ExtractSubtitlesTask> logger)
     {
         _libraryManager = libraryManager;
         _localization = localization;
         _encoder = subtitleEncoder;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -152,6 +159,14 @@ public class ExtractSubtitlesTask : IScheduledTask
                 foreach (var mediaSource in video.GetMediaSources(false).Where(source => FilterMediasWithCodec(isAdvancedCodecSelection, includeTextSubtitles, includeGraphicalSubtitles, selectedCodecs, source)))
                 {
                     await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
+
+                    await DoxExtractor.CleanupUnwantedSubtitles(
+                    _encoder,
+                    mediaSource,
+                    _logger,
+                    true,
+                    true,
+                    cancellationToken).ConfigureAwait(false);
                 }
 
                 completedVideos++;

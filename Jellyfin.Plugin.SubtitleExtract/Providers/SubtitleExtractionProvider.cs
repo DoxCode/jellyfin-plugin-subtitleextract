@@ -1,11 +1,16 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Plugin.SubtitleExtract.Helpers;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Providers;
+using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.SubtitleExtract.Providers;
@@ -88,6 +93,18 @@ public class SubtitleExtractionProvider : ICustomMetadataProvider<Episode>,
             foreach (var mediaSource in item.GetMediaSources(false))
             {
                 await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
+
+                // Clean up unwanted subtitle files based on language filters
+                bool extractSpanish = true;  // Set to true to extract Spanish
+                bool extractEnglish = true;  // Set to true to extract English
+
+                await DoxExtractor.CleanupUnwantedSubtitles(
+                    _encoder,
+                    mediaSource,
+                    _logger,
+                    extractSpanish,
+                    extractEnglish,
+                    cancellationToken).ConfigureAwait(false);
             }
 
             _logger.LogDebug("Finished subtitle extraction for: {Video}", item.Path);
